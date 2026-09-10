@@ -10,7 +10,7 @@ def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/employees")
+@app.post("/employees", status_code=202)
 def add_employee(employee: EmployeeCreate):
     created_employee = create_employee(employee)
 
@@ -40,8 +40,8 @@ def get_employee(employee_id: int = Path(gt=0)):
 
 @app.put("/employees/{employee_id}")
 def edit_employee(
-    employee_id: int = Path(gt=0),
-    employee: EmployeeCreate = None
+    employee: EmployeeCreate,
+    employee_id: int = Path(gt=0)
 ):
     updated_employee = update_employee(employee_id, employee)
 
