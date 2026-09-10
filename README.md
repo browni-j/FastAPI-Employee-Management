@@ -35,6 +35,16 @@ Stackly_task/
 │   ├── schemas.py
 │   └── services.py
 │
+├── screenshots/
+│   ├── 01_Health_Check.png
+│   ├── 02_Employee_Creation.png
+│   ├── 03_Employee_List.png
+│   ├── 04_Employee_Update.png
+│   ├── 05_Employee_Deletion.png
+│   ├── 06_Duplicate_Email_Validation.png
+│   └── 07_Employee_Not_Found.png
+│
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
@@ -119,6 +129,18 @@ The application validates:
 * Duplicate email returns `409`
 * Invalid request data returns `422`
 
+## Swagger Screenshots
+
+The `screenshots` folder contains screenshots demonstrating:
+
+1. Health check
+2. Employee creation
+3. Employee list
+4. Employee update
+5. Employee deletion
+6. Duplicate email validation
+7. Employee not found response
+
 ## What I Learned
 
 * FastAPI application structure
@@ -131,6 +153,7 @@ The application validates:
 * Using Swagger UI for API testing
 * Working with virtual environments
 * Managing Python dependencies using `requirements.txt`
+* Basic Git and GitHub workflow
 
 ## Difficulties Faced
 
