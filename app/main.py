@@ -10,7 +10,7 @@ def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/employees", status_code=202)
+@app.post("/employees", status_code=201)
 def add_employee(employee: EmployeeCreate):
     created_employee = create_employee(employee)
 
