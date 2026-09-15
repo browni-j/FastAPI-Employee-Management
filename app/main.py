@@ -1,8 +1,20 @@
-from fastapi import FastAPI, HTTPException, Path
-from app.schemas import EmployeeCreate
-from app.services import create_employee, get_all_employees, get_employee_by_id, update_employee, delete_employee
+from fastapi import Depends, FastAPI, HTTPException, Path
+from sqlalchemy.orm import Session
+
+from app.database import Base, engine, get_db
+from app.models import Employee
+from app.schemas import EmployeeCreate, EmployeeResponse, EmployeeUpdate
+from app.services import (
+    create_employee,
+    delete_employee,
+    get_all_employees,
+    get_employee_by_id,
+    update_employee,
+)
 
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")
@@ -10,11 +22,14 @@ def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/employees", status_code=201)
-def add_employee(employee: EmployeeCreate):
-    created_employee = create_employee(employee)
+@app.post("/employees", response_model=EmployeeResponse, status_code=201)
+def add_employee(
+    employee: EmployeeCreate,
+    db: Session = Depends(get_db)
+):
+    created_employee = create_employee(db, employee)
 
-    if created_employee is None:
+    if created_employee == "duplicate_email":
         raise HTTPException(
             status_code=409,
             detail="Email already exists"
@@ -22,13 +37,18 @@ def add_employee(employee: EmployeeCreate):
 
     return created_employee
 
-@app.get("/employees")
-def get_employees():
-    return get_all_employees()
 
-@app.get("/employees/{employee_id}")
-def get_employee(employee_id: int = Path(gt=0)):
-    employee = get_employee_by_id(employee_id)
+@app.get("/employees", response_model=list[EmployeeResponse])
+def get_employees(db: Session = Depends(get_db)):
+    return get_all_employees(db)
+
+
+@app.get("/employees/{employee_id}", response_model=EmployeeResponse)
+def get_employee(
+    employee_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
+):
+    employee = get_employee_by_id(db, employee_id)
 
     if employee is None:
         raise HTTPException(
@@ -38,12 +58,14 @@ def get_employee(employee_id: int = Path(gt=0)):
 
     return employee
 
-@app.put("/employees/{employee_id}")
+
+@app.put("/employees/{employee_id}", response_model=EmployeeResponse)
 def edit_employee(
-    employee: EmployeeCreate,
-    employee_id: int = Path(gt=0)
+    employee: EmployeeUpdate,
+    employee_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
 ):
-    updated_employee = update_employee(employee_id, employee)
+    updated_employee = update_employee(db, employee_id, employee)
 
     if updated_employee == "duplicate_email":
         raise HTTPException(
@@ -61,8 +83,11 @@ def edit_employee(
 
 
 @app.delete("/employees/{employee_id}")
-def delete_employee_api(employee_id: int = Path(gt=0)):
-    deleted_employee = delete_employee(employee_id)
+def delete_employee_api(
+    employee_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
+):
+    deleted_employee = delete_employee(db, employee_id)
 
     if deleted_employee is None:
         raise HTTPException(
@@ -73,4 +98,4 @@ def delete_employee_api(employee_id: int = Path(gt=0)):
     return {
         "message": "Employee deleted successfully",
         "employee": deleted_employee
-    }
+    };

@@ -1,9 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Literal
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
-class EmployeeCreate(BaseModel):
+class EmployeeBase(BaseModel):
     name: str = Field(min_length=1)
     email: EmailStr
     department: str = Field(min_length=1)
@@ -11,6 +12,33 @@ class EmployeeCreate(BaseModel):
     location: str = Field(min_length=1)
     work_mode: Literal["WFH", "WFO"]
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.now)
 
-    
+    @field_validator("name", "department", "primary_skill", "location")
+    @classmethod
+    def reject_blank(cls, value: str):
+        value = value.strip()
+
+        if not value:
+            raise ValueError("Field cannot be blank")
+
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str):
+        return value.strip().lower()
+
+
+class EmployeeCreate(EmployeeBase):
+    pass
+
+
+class EmployeeUpdate(EmployeeBase):
+    pass
+
+
+class EmployeeResponse(EmployeeBase):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
