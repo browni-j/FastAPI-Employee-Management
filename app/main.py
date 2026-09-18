@@ -1,4 +1,6 @@
-from fastapi import Depends, FastAPI, HTTPException, Path
+from fastapi import Depends, FastAPI, HTTPException, Path, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
@@ -13,6 +15,13 @@ from app.services import (
 )
 
 app = FastAPI()
+
+@app.exception_handler(SQLAlchemyError)
+async def database_exception_handler(request: Request, exc: SQLAlchemyError):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Database operation failed"}
+    )
 
 Base.metadata.create_all(bind=engine)
 
