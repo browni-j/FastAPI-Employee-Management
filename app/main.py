@@ -1,11 +1,16 @@
-from fastapi import Depends, FastAPI, HTTPException, Path, Request
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import Employee
-from app.schemas import EmployeeCreate, EmployeeResponse, EmployeeUpdate
+from app.schemas import (
+    EmployeeCreate,
+    EmployeeResponse,
+    EmployeeListResponse,
+    EmployeeUpdate,
+)
 from app.services import (
     create_employee,
     delete_employee,
@@ -47,9 +52,25 @@ def add_employee(
     return created_employee
 
 
-@app.get("/employees", response_model=list[EmployeeResponse])
-def get_employees(db: Session = Depends(get_db)):
-    return get_all_employees(db)
+@app.get("/employees", response_model=EmployeeListResponse)
+def get_employees(
+    search: str | None = Query(default=None),
+    department: str | None = Query(default=None),
+    work_mode: str | None = Query(default=None, pattern="^(WFH|WFO)$"),
+    is_active: bool | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    return get_all_employees(
+        db=db,
+        search=search,
+        department=department,
+        work_mode=work_mode,
+        is_active=is_active,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.get("/employees/{employee_id}", response_model=EmployeeResponse)

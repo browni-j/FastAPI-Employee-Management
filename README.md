@@ -21,6 +21,13 @@ A beginner-friendly FastAPI backend application for managing employee records us
 * Database transaction rollback on failed changes
 * Database session cleanup
 * Database persistence across application restarts
+* Employee search by name
+* Department filtering
+* Work mode filtering
+* Active/inactive employee filtering
+* Combined filters
+* Pagination using limit and offset
+* Employee listing ordered by ID
 
 ## Technologies Used
 
@@ -173,14 +180,14 @@ Swagger UI can be used to test all available APIs.
 
 ## API Endpoints
 
-| Method | Endpoint                   | Description        |
-| ------ | -------------------------- | ------------------ |
-| GET    | `/health`                  | Health check       |
-| POST   | `/employees`               | Create employee    |
-| GET    | `/employees`               | Get all employees  |
-| GET    | `/employees/{employee_id}` | Get employee by ID |
-| PUT    | `/employees/{employee_id}` | Update employee    |
-| DELETE | `/employees/{employee_id}` | Delete employee    |
+| Method | Endpoint                   | Description                                                |
+| ------ | -------------------------- | ---------------------------------------------------------- |
+| GET    | `/health`                  | Health check                                               |
+| POST   | `/employees`               | Create employee                                            |
+| GET    | `/employees`               | Get employees with optional search, filters and pagination |
+| GET    | `/employees/{employee_id}` | Get employee by ID                                         |
+| PUT    | `/employees/{employee_id}` | Update employee                                            |
+| DELETE | `/employees/{employee_id}` | Delete employee                                            |
 
 ## Employee Fields
 
@@ -196,6 +203,148 @@ Swagger UI can be used to test all available APIs.
 | `is_active`     | Employee active status      |
 | `created_at`    | Employee creation timestamp |
 
+## Employee Search, Filtering and Pagination
+
+The `GET /employees` endpoint supports optional query parameters for searching, filtering, and pagination.
+
+| Query Parameter | Description                                    | Default | Validation        |
+| --------------- | ---------------------------------------------- | ------- | ----------------- |
+| `search`        | Partial employee name search, case-insensitive | None    | Optional          |
+| `department`    | Filter employees by department                 | None    | Optional          |
+| `work_mode`     | Filter employees by work mode                  | None    | `WFH` or `WFO`    |
+| `is_active`     | Filter employees by active status              | None    | `true` or `false` |
+| `limit`         | Maximum number of records to return            | `10`    | `1-100`           |
+| `offset`        | Number of records to skip                      | `0`     | `0` or greater    |
+
+### Search by Employee Name
+
+The `search` parameter supports partial and case-insensitive employee name searches.
+
+Example:
+
+```text
+GET /employees?search=brow
+```
+
+### Filter by Department
+
+The `department` parameter filters employees by department.
+
+Example:
+
+```text
+GET /employees?department=IT
+```
+
+### Filter by Work Mode
+
+The `work_mode` parameter supports:
+
+* `WFH`
+* `WFO`
+
+Example:
+
+```text
+GET /employees?work_mode=WFH
+```
+
+### Filter by Active Status
+
+The `is_active` parameter can be used to filter active or inactive employees.
+
+Example:
+
+```text
+GET /employees?is_active=true
+```
+
+For inactive employees:
+
+```text
+GET /employees?is_active=false
+```
+
+### Combined Filters
+
+Multiple filters can be used together.
+
+Example:
+
+```text
+GET /employees?department=IT&work_mode=WFO&is_active=true
+```
+
+### Pagination
+
+The `limit` parameter controls the maximum number of records returned, while `offset` specifies the number of records to skip.
+
+Example:
+
+```text
+GET /employees?limit=10&offset=0
+```
+
+Another page:
+
+```text
+GET /employees?limit=10&offset=10
+```
+
+### Search with Pagination
+
+Search and pagination can also be combined.
+
+Example:
+
+```text
+GET /employees?search=brow&limit=5&offset=0
+```
+
+### Response Format
+
+The `/employees` endpoint returns the total number of matching records before pagination, along with the requested limit, offset, and employee records.
+
+Example:
+
+```json
+{
+  "total": 2,
+  "limit": 10,
+  "offset": 0,
+  "items": [
+    {
+      "name": "Employee Name",
+      "email": "employee@example.com",
+      "department": "IT",
+      "primary_skill": "Python",
+      "location": "Nagercoil",
+      "work_mode": "WFO",
+      "is_active": true,
+      "id": 1,
+      "created_at": "2026-09-17T10:58:12"
+    }
+  ]
+}
+```
+
+Employees are returned in ascending order by employee ID.
+
+If no employees match the specified filters, the API returns HTTP `200` with `total` as `0` and an empty `items` array.
+
+Example:
+
+```json
+{
+  "total": 0,
+  "limit": 10,
+  "offset": 0,
+  "items": []
+}
+```
+
+If the offset is greater than the number of matching records, the API returns an empty `items` array while maintaining the correct `total`.
+
 ## Validation and Error Handling
 
 The application validates:
@@ -208,6 +357,14 @@ The application validates:
 * Invalid employee IDs
 * Missing required fields
 * Employee not found scenarios
+* Invalid pagination limits
+* Invalid pagination offsets
+
+Pagination validation:
+
+* `limit` must be between `1` and `100`.
+* `offset` must be `0` or greater.
+* `work_mode` must be either `WFH` or `WFO`.
 
 Common responses:
 
@@ -241,18 +398,32 @@ Database persistence was tested by:
 
 The records remained available after restarting the application, confirming that employee data is stored in MySQL rather than an in-memory Python list.
 
-## Testing Evidence
+## Task 3 Testing Evidence
 
-The `screenshots` folder contains API testing and database verification screenshots, including:
+The `screenshots` folder contains API testing evidence for search, filtering, pagination, validation, and existing CRUD functionality.
 
-* Health check
-* Employee creation with HTTP `201`
-* Employee listing
-* Employee update
-* Employee deletion
-* Duplicate email validation
-* Employee not found
-* MySQL database persistence
+The following scenarios were tested through Swagger UI:
+
+* Employee name search
+* Case-insensitive partial name search
+* Department filtering
+* Work mode filtering
+* Active employee filtering
+* Inactive employee filtering
+* Combined filters
+* Pagination using `limit` and `offset`
+* Multiple pagination pages
+* No-match search results
+* Offset beyond available records
+* Invalid work mode validation
+* Invalid `limit` validation
+* Invalid `offset` validation
+* GET employee by ID regression test
+* PUT employee update regression test
+* DELETE employee regression test
+* POST employee creation regression test
+
+All tested scenarios returned the expected API responses.
 
 ## Learning Notes
 
@@ -269,7 +440,12 @@ During this task, I learned how to:
 * Preserve database-generated IDs and creation timestamps.
 * Verify that data persists after application restarts.
 * Handle database failures with clear JSON responses.
-* Organize a FastAPI project into database, model, schema, service, and API layers.
+* Implement SQLAlchemy query-based filtering.
+* Implement case-insensitive partial name searches using `ilike`.
+* Combine multiple optional query filters.
+* Implement pagination using `limit` and `offset`.
+* Calculate total matching records before pagination.
+* Validate query parameters using FastAPI `Query`.
 
 ## Challenges and Solutions
 
@@ -293,6 +469,20 @@ Employee records were verified before and after restarting the FastAPI applicati
 
 A SQLAlchemy exception handler was added to return a clear JSON error message instead of a generic internal server error.
 
+### Search and Filtering
+
+The employee listing endpoint was extended to support optional search and filter parameters. SQLAlchemy query filters are applied directly to the database query instead of filtering records in Python.
+
+### Pagination
+
+Pagination was implemented using SQLAlchemy `offset()` and `limit()` methods. The total number of matching records is calculated before pagination so that clients can understand the available result count.
+
+### Query Parameter Validation
+
+FastAPI `Query` validation was used to ensure that `limit` remains between `1` and `100`, `offset` is non-negative, and `work_mode` accepts only `WFH` or `WFO`.
+
 ## Conclusion
 
-Task 2 extends the Employee Management API by replacing temporary in-memory storage with persistent MySQL database storage using SQLAlchemy. The application now supports database-backed CRUD operations, validation, transaction handling, error handling, and persistence across application restarts.
+Task 3 extends the Employee Management API with employee search, filtering, and pagination capabilities. The API supports case-insensitive name search, department filtering, work mode filtering, active status filtering, combined filters, and pagination using limit and offset.
+
+All filtering and pagination operations are performed at the SQLAlchemy query level while maintaining the existing MySQL database-backed CRUD functionality. Existing create, read, update, and delete APIs were also regression tested to ensure that the Task 3 changes did not affect the existing functionality.

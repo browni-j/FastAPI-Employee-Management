@@ -43,8 +43,47 @@ def create_employee(db: Session, employee: EmployeeCreate):
         raise
 
 
-def get_all_employees(db: Session):
-    return db.query(Employee).all()
+def get_all_employees(
+    db: Session,
+    search: str | None = None,
+    department: str | None = None,
+    work_mode: str | None = None,
+    is_active: bool | None = None,
+    limit: int = 10,
+    offset: int = 0,
+):
+    query = db.query(Employee)
+
+    if search:
+        query = query.filter(Employee.name.ilike(f"%{search.strip()}%"))
+
+    if department:
+        query = query.filter(
+            func.lower(Employee.department) == department.strip().lower()
+        )
+
+    if work_mode:
+        query = query.filter(Employee.work_mode == work_mode)
+
+    if is_active is not None:
+        query = query.filter(Employee.is_active == is_active)
+
+    total = query.count()
+
+    employees = (
+        query
+        .order_by(Employee.id.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": employees,
+    }
 
 
 def get_employee_by_id(db: Session, employee_id: int):
