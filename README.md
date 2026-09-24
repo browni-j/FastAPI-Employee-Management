@@ -65,14 +65,14 @@ FastAPI-Employee-Management/
 
 ## Installation
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/browni-j/FastAPI-Employee-Management.git
 cd FastAPI-Employee-Management
 ```
 
-### 2. Create a virtual environment
+### 2. Create a Virtual Environment
 
 Windows PowerShell:
 
@@ -80,7 +80,7 @@ Windows PowerShell:
 python -m venv venv
 ```
 
-### 3. Activate the virtual environment
+### 3. Activate the Virtual Environment
 
 ```powershell
 .\venv\Scripts\Activate.ps1
@@ -98,7 +98,7 @@ Then activate again:
 .\venv\Scripts\Activate.ps1
 ```
 
-### 4. Install dependencies
+### 4. Install Dependencies
 
 ```powershell
 pip install -r requirements.txt
@@ -187,7 +187,7 @@ Swagger UI can be used to test all available APIs.
 | GET    | `/employees`               | Get employees with optional search, filters and pagination |
 | GET    | `/employees/{employee_id}` | Get employee by ID                                         |
 | PUT    | `/employees/{employee_id}` | Update employee                                            |
-| DELETE | `/employees/{employee_id}` | Delete employee                                            |
+| DELETE | `/employees/{employee_id}` | Delete an employee                                         |
 
 ## Employee Fields
 
