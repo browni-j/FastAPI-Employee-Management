@@ -2,14 +2,25 @@ from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, Response
 
 from app.database import Base, engine, get_db
-from app.models import Employee
+from app.models import Employee, WorkItem
 from app.schemas import (
     EmployeeCreate,
     EmployeeResponse,
     EmployeeListResponse,
     EmployeeUpdate,
+)
+from app.schemas import (
+    EmployeeCreate,
+    EmployeeResponse,
+    EmployeeListResponse,
+    EmployeeUpdate,
+    WorkItemCreate,
+    WorkItemResponse,
+    WorkItemListResponse,
+    WorkItemUpdate,
 )
 from app.services import (
     create_employee,
@@ -128,4 +139,113 @@ def delete_employee_api(
     return {
         "message": "Employee deleted successfully",
         "employee": deleted_employee
-    };
+    }
+
+@app.post(
+    "/work-items",
+    response_model=WorkItemResponse,
+    status_code=201
+)
+def add_work_item(
+    work_item: WorkItemCreate,
+    db: Session = Depends(get_db)
+):
+    created_work_item = create_work_item(db, work_item)
+
+    if created_work_item == "employee_not_found":
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found"
+        )
+
+    return created_work_item
+
+@app.get(
+    "/work-items",
+    response_model=WorkItemListResponse
+)
+def get_work_items(
+    search: str | None = Query(default=None),
+    employee_id: int | None = Query(default=None, gt=0),
+    status: str | None = Query(default=None),
+    priority: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    return get_all_work_items(
+        db=db,
+        search=search,
+        employee_id=employee_id,
+        status=status,
+        priority=priority,
+        limit=limit,
+        offset=offset,
+    )
+
+@app.get(
+    "/work-items/{work_item_id}",
+    response_model=WorkItemResponse
+)
+def get_work_item(
+    work_item_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
+):
+    work_item = get_work_item_by_id(db, work_item_id)
+
+    if work_item is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Work item not found"
+        )
+
+    return work_item
+
+@app.put(
+    "/work-items/{work_item_id}",
+    response_model=WorkItemResponse
+)
+def edit_work_item(
+    work_item: WorkItemUpdate,
+    work_item_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
+):
+    updated_work_item = update_work_item(
+        db,
+        work_item_id,
+        work_item
+    )
+
+    if updated_work_item == "employee_not_found":
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found"
+        )
+
+    if updated_work_item is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Work item not found"
+        )
+
+    return updated_work_item
+
+@app.delete(
+    "/work-items/{work_item_id}",
+    status_code=204
+)
+def remove_work_item(
+    work_item_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
+):
+    deleted = delete_work_item(db, work_item_id)
+
+    if deleted is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Work item not found"
+        )
+
+    return Response(status_code=204)
+
+

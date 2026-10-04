@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -49,3 +50,69 @@ class EmployeeListResponse(BaseModel):
     limit: int
     offset: int
     items: list[EmployeeResponse]
+
+class WorkItemCreate(BaseModel):
+    title: str = Field(min_length=1)
+    description: str | None = None
+    employee_id: int = Field(gt=0)
+    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"] = "TODO"
+    priority: Literal["LOW", "MEDIUM", "HIGH"] = "MEDIUM"
+    due_date: date | None = None
+
+    @field_validator("title")
+    @classmethod
+    def reject_blank_title(cls, value: str):
+        value = value.strip()
+
+        if not value:
+            raise ValueError("Title cannot be blank")
+
+        return value
+
+
+class WorkItemUpdate(BaseModel):
+    title: str = Field(min_length=1)
+    description: str | None = None
+    employee_id: int = Field(gt=0)
+    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"]
+    priority: Literal["LOW", "MEDIUM", "HIGH"]
+    due_date: date | None = None
+
+    @field_validator("title")
+    @classmethod
+    def reject_blank_title(cls, value: str):
+        value = value.strip()
+
+        if not value:
+            raise ValueError("Title cannot be blank")
+
+        return value
+
+
+class AssignedEmployeeResponse(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WorkItemResponse(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    employee_id: int
+    status: str
+    priority: str
+    due_date: date | None
+    created_at: datetime
+    assigned_employee: AssignedEmployeeResponse
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WorkItemListResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[WorkItemResponse]

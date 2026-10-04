@@ -1,9 +1,156 @@
+
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Employee
-from app.schemas import EmployeeCreate, EmployeeUpdate
+from app.models import Employee, WorkItem
+from app.schemas import (
+    EmployeeCreate,
+    EmployeeUpdate,
+    WorkItemCreate,
+    WorkItemUpdate,
+)
+
+def create_work_item(db: Session, work_item: WorkItemCreate):
+    employee = (
+        db.query(Employee)
+        .filter(Employee.id == work_item.employee_id)
+        .first()
+    )
+
+    if employee is None:
+        return "employee_not_found"
+
+    db_work_item = WorkItem(
+        title=work_item.title.strip(),
+        description=(
+            work_item.description.strip()
+            if work_item.description is not None
+            else None
+        ),
+        employee_id=work_item.employee_id,
+        status=work_item.status,
+        priority=work_item.priority,
+        due_date=work_item.due_date,
+    )
+
+    try:
+        db.add(db_work_item)
+        db.commit()
+        db.refresh(db_work_item)
+        return db_work_item
+
+    except Exception:
+        db.rollback()
+        raise
+
+
+def get_all_work_items(
+    db: Session,
+    search: str | None = None,
+    employee_id: int | None = None,
+    status: str | None = None,
+    priority: str | None = None,
+    limit: int = 10,
+    offset: int = 0,
+):
+    query = db.query(WorkItem)
+
+    if search:
+        query = query.filter(
+            WorkItem.title.ilike(f"%{search.strip()}%")
+        )
+
+    if employee_id is not None:
+        query = query.filter(
+            WorkItem.employee_id == employee_id
+        )
+
+    if status:
+        query = query.filter(
+            WorkItem.status == status
+        )
+
+    if priority:
+        query = query.filter(
+            WorkItem.priority == priority
+        )
+
+    total = query.count()
+
+    work_items = (
+        query
+        .order_by(WorkItem.id.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": work_items,
+    }
+def get_work_item_by_id(db: Session, work_item_id: int):
+    return (
+        db.query(WorkItem)
+        .filter(WorkItem.id == work_item_id)
+        .first()
+    )
+def update_work_item(
+    db: Session,
+    work_item_id: int,
+    work_item: WorkItemUpdate
+):
+    db_work_item = get_work_item_by_id(db, work_item_id)
+
+    if db_work_item is None:
+        return None
+
+    employee = (
+        db.query(Employee)
+        .filter(Employee.id == work_item.employee_id)
+        .first()
+    )
+
+    if employee is None:
+        return "employee_not_found"
+
+    db_work_item.title = work_item.title.strip()
+    db_work_item.description = (
+        work_item.description.strip()
+        if work_item.description is not None
+        else None
+    )
+    db_work_item.employee_id = work_item.employee_id
+    db_work_item.status = work_item.status
+    db_work_item.priority = work_item.priority
+    db_work_item.due_date = work_item.due_date
+
+    try:
+        db.commit()
+        db.refresh(db_work_item)
+        return db_work_item
+
+    except Exception:
+        db.rollback()
+        raise
+
+def delete_work_item(db: Session, work_item_id: int):
+    db_work_item = get_work_item_by_id(db, work_item_id)
+
+    if db_work_item is None:
+        return None
+
+    try:
+        db.delete(db_work_item)
+        db.commit()
+        return True
+
+    except Exception:
+        db.rollback()
+        raise
 
 
 def create_employee(db: Session, employee: EmployeeCreate):
@@ -168,3 +315,4 @@ def delete_employee(db: Session, employee_id: int):
     except Exception:
         db.rollback()
         raise
+
