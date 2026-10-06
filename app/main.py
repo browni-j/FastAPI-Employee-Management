@@ -28,6 +28,11 @@ from app.services import (
     get_all_employees,
     get_employee_by_id,
     update_employee,
+    create_work_item,
+    get_all_work_items,
+    get_work_item_by_id,
+    update_work_item,
+    delete_work_item,
 )
 
 app = FastAPI()

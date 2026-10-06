@@ -482,3 +482,79 @@ The existing CRUD APIs remain available, and the `GET /employees` endpoint now s
 * Combined filters
 * Pagination
 * ID-based ordering
+
+
+## Task 4 - Work Item Management
+
+Task 4 adds work item management and connects work items with employees using a foreign key and SQLAlchemy relationship.
+
+### Work Item APIs
+
+| Method | Endpoint                     | Description                                        |
+| ------ | ---------------------------- | -------------------------------------------------- |
+| POST   | `/work-items`                | Create work item                                   |
+| GET    | `/work-items`                | Get work items with search, filters and pagination |
+| GET    | `/work-items/{work_item_id}` | Get work item by ID                                |
+| PUT    | `/work-items/{work_item_id}` | Update work item                                   |
+| DELETE | `/work-items/{work_item_id}` | Delete work item                                   |
+
+### Work Item Fields
+
+* `id` - Auto-generated work item ID
+* `title` - Required work item title
+* `description` - Optional description
+* `employee_id` - Assigned employee ID
+* `status` - `TODO`, `IN_PROGRESS`, or `COMPLETED`
+* `priority` - `LOW`, `MEDIUM`, or `HIGH`
+* `due_date` - Optional due date
+* `created_at` - Record creation timestamp
+
+### Employee Relationship
+
+Each work item is assigned to an existing employee using the `employee_id` foreign key.
+
+The SQLAlchemy relationship is defined between:
+
+```text
+Employee → WorkItem
+```
+
+One employee can have multiple work items, while each work item belongs to one employee.
+
+### Search, Filters and Pagination
+
+The `GET /work-items` endpoint supports:
+
+* Title search using `search`
+* Employee filtering using `employee_id`
+* Status filtering using `status`
+* Priority filtering using `priority`
+* Pagination using `limit` and `offset`
+* ID-based ascending order
+
+Example:
+
+```text
+GET /work-items?employee_id=4&status=TODO&priority=MEDIUM&limit=10&offset=0
+```
+
+### Validation and Error Handling
+
+The API validates:
+
+* Employee existence
+* Work item existence
+* Positive employee ID
+* Valid status and priority values
+* Required title
+* Blank or whitespace-only title
+
+Invalid data returns `422 Unprocessable Entity`, while missing employees or work items return `404 Not Found`.
+
+### Testing
+
+Task 4 APIs were tested using Swagger UI, including create, get, search, filtering, pagination, update, delete, validation, employee reassignment, persistence after restart, and existing employee API regression testing.
+
+### Task 4 Summary
+
+Task 4 implements Work Item CRUD operations with employee assignment using a foreign key and SQLAlchemy relationship. Search, filtering, pagination, validation, error handling and database persistence were also implemented and tested.

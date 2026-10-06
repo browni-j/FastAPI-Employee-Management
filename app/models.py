@@ -118,3 +118,7 @@ class WorkItem(Base):
         "Employee",
         back_populates="work_items"
     )
+
+    @property
+    def assigned_employee(self):
+        return self.employee
