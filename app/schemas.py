@@ -52,8 +52,8 @@ class EmployeeListResponse(BaseModel):
     items: list[EmployeeResponse]
 
 class WorkItemCreate(BaseModel):
-    title: str = Field(min_length=1)
-    description: str | None = None
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
     employee_id: int = Field(gt=0)
     status: Literal["TODO", "IN_PROGRESS", "COMPLETED"] = "TODO"
     priority: Literal["LOW", "MEDIUM", "HIGH"] = "MEDIUM"
@@ -69,10 +69,9 @@ class WorkItemCreate(BaseModel):
 
         return value
 
-
 class WorkItemUpdate(BaseModel):
-    title: str = Field(min_length=1)
-    description: str | None = None
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
     employee_id: int = Field(gt=0)
     status: Literal["TODO", "IN_PROGRESS", "COMPLETED"]
     priority: Literal["LOW", "MEDIUM", "HIGH"]

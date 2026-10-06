@@ -2,6 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from typing import Literal
 from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, Response
 
 from app.database import Base, engine, get_db
@@ -127,9 +128,8 @@ def edit_employee(
 
     return updated_employee
 
-
-@app.delete("/employees/{employee_id}")
-def delete_employee_api(
+@app.delete("/employees/{employee_id}", response_model=str)
+def remove_employee(
     employee_id: int = Path(gt=0),
     db: Session = Depends(get_db)
 ):
@@ -141,10 +141,13 @@ def delete_employee_api(
             detail="Employee not found"
         )
 
-    return {
-        "message": "Employee deleted successfully",
-        "employee": deleted_employee
-    }
+    if deleted_employee == "has_work_items":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete employee with assigned work items. Reassign or delete the work items first."
+        )
+
+    return "Employee deleted successfully"
 
 @app.post(
     "/work-items",
@@ -172,8 +175,8 @@ def add_work_item(
 def get_work_items(
     search: str | None = Query(default=None),
     employee_id: int | None = Query(default=None, gt=0),
-    status: str | None = Query(default=None),
-    priority: str | None = Query(default=None),
+    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"] | None = Query(default=None),
+    priority: Literal["LOW", "MEDIUM", "HIGH"] | None = Query(default=None),
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),

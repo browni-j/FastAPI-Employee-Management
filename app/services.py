@@ -295,6 +295,15 @@ def delete_employee(db: Session, employee_id: int):
     if db_employee is None:
         return None
 
+    assigned_work_item = (
+        db.query(WorkItem)
+        .filter(WorkItem.employee_id == employee_id)
+        .first()
+    )
+
+    if assigned_work_item:
+        return "has_work_items"
+
     deleted_employee = {
         "id": db_employee.id,
         "name": db_employee.name,
@@ -314,5 +323,4 @@ def delete_employee(db: Session, employee_id: int):
 
     except Exception:
         db.rollback()
-        raise
-
+        raise 
