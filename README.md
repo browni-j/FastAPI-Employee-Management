@@ -687,3 +687,45 @@ The `GET /work-items` endpoint supports:
 Task 4 also includes request validation, employee existence validation, work item existence validation, status and priority validation, title and description length validation, database persistence and protection against deleting employees who have assigned work items.
 
 All existing employee APIs remain available and were regression tested to ensure that Task 4 changes do not break previous functionality.
+
+## Task 5 – Work Item Status Updates and Employee Summary
+
+### Work Item Status Rules
+
+Allowed status transitions:
+
+- `TODO` → `IN_PROGRESS`
+- `IN_PROGRESS` → `COMPLETED`
+- Requesting the current status again is allowed without changing the record.
+- Skipped or backward transitions return `400 Bad Request`.
+- New work items must start with `TODO`.
+- Missing work items return `404 Not Found`.
+
+### API Endpoints
+
+**1. Update Work Item Status**
+
+`PATCH /work-items/{work_item_id}/status`
+
+Request body:
+
+```json
+{
+  "status": "IN_PROGRESS"
+}
+```
+
+**2. Employee Work Summary**
+
+`GET /employees/{employee_id}/work-summary`
+
+Returns the employee's total work items and counts for `TODO`, `IN_PROGRESS`, and `COMPLETED`.
+
+### Task 5 Screenshots
+
+1. Successful status update — `screenshots/Task5_PATCH_Status_Update.png`
+2. Invalid status transition — `screenshots/Task5_Invalid_Status_Transition.png`
+3. Invalid initial status — `screenshots/Task5_Invalid_Initial_Status.png`
+4. Employee work summary — `screenshots/Task5_Employee_Work_Summary.png`
+5. Missing work item — `screenshots/Task5_Missing_Work_Item.png`
+
