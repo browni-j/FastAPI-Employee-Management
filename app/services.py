@@ -3,12 +3,16 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.schemas import WorkItemStatusUpdate
+
+
 from app.models import Employee, WorkItem
 from app.schemas import (
     EmployeeCreate,
     EmployeeUpdate,
     WorkItemCreate,
     WorkItemUpdate,
+    WorkItemStatusUpdate,
 )
 
 def create_work_item(db: Session, work_item: WorkItemCreate):
@@ -17,9 +21,12 @@ def create_work_item(db: Session, work_item: WorkItemCreate):
         .filter(Employee.id == work_item.employee_id)
         .first()
     )
-
+  
     if employee is None:
         return "employee_not_found"
+    
+    if work_item.status != "TODO":
+        return "invalid_initial_status"
 
     db_work_item = WorkItem(
         title=work_item.title.strip(),
@@ -98,6 +105,7 @@ def get_work_item_by_id(db: Session, work_item_id: int):
         .filter(WorkItem.id == work_item_id)
         .first()
     )
+
 def update_work_item(
     db: Session,
     work_item_id: int,
@@ -117,6 +125,20 @@ def update_work_item(
     if employee is None:
         return "employee_not_found"
 
+    # Validate status only when supplied
+    if "status" in work_item.model_fields_set:
+        current_status = db_work_item.status
+        new_status = work_item.status
+
+        allowed_transitions = {
+            "TODO": "IN_PROGRESS",
+            "IN_PROGRESS": "COMPLETED",
+        }
+
+        if new_status != current_status:
+            if allowed_transitions.get(current_status) != new_status:
+                return "invalid_status_transition"
+
     db_work_item.title = work_item.title.strip()
     db_work_item.description = (
         work_item.description.strip()
@@ -124,7 +146,11 @@ def update_work_item(
         else None
     )
     db_work_item.employee_id = work_item.employee_id
-    db_work_item.status = work_item.status
+
+    # Preserve current status if omitted
+    if "status" in work_item.model_fields_set:
+        db_work_item.status = work_item.status
+
     db_work_item.priority = work_item.priority
     db_work_item.due_date = work_item.due_date
 
@@ -136,6 +162,41 @@ def update_work_item(
     except Exception:
         db.rollback()
         raise
+
+ 
+def update_work_item_status(
+    db: Session,
+    work_item_id: int,
+    status_update: WorkItemStatusUpdate,
+):
+    db_work_item = get_work_item_by_id(db, work_item_id)
+
+    if db_work_item is None:
+        return None
+
+    current_status = db_work_item.status
+    new_status = status_update.status
+
+    allowed_transitions = {
+        "TODO": "IN_PROGRESS",
+        "IN_PROGRESS": "COMPLETED",
+    }
+
+    if current_status == new_status:
+        return db_work_item
+
+    if allowed_transitions.get(current_status) != new_status:
+        return "invalid_status_transition"
+
+    try:
+        db_work_item.status = new_status
+        db.commit()
+        db.refresh(db_work_item)
+        return db_work_item
+    except Exception:
+        db.rollback()
+        raise
+   
 
 def delete_work_item(db: Session, work_item_id: int):
     db_work_item = get_work_item_by_id(db, work_item_id)

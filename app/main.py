@@ -22,6 +22,7 @@ from app.schemas import (
     WorkItemResponse,
     WorkItemListResponse,
     WorkItemUpdate,
+    WorkItemStatusUpdate,
 )
 from app.services import (
     create_employee,
@@ -33,6 +34,7 @@ from app.services import (
     get_all_work_items,
     get_work_item_by_id,
     update_work_item,
+    update_work_item_status,
     delete_work_item,
 )
 
@@ -106,6 +108,41 @@ def get_employee(
     return employee
 
 
+@app.get("/employees/{employee_id}/work-summary")
+def get_employee_work_summary(
+    employee_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+):
+    employee = get_employee_by_id(db, employee_id)
+
+    if employee is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Employee not found",
+        )
+
+    work_items = (
+        db.query(WorkItem)
+        .filter(WorkItem.employee_id == employee_id)
+        .all()
+    )
+
+    return {
+        "employee_id": employee.id,
+        "employee_name": employee.name,
+        "total_work_items": len(work_items),
+        "todo": sum(item.status == "TODO" for item in work_items),
+        "in_progress": sum(
+            item.status == "IN_PROGRESS" for item in work_items
+        ),
+        "completed": sum(
+            item.status == "COMPLETED" for item in work_items
+        ),
+        "work_items": work_items,
+    }
+
+
+
 @app.put("/employees/{employee_id}", response_model=EmployeeResponse)
 def edit_employee(
     employee: EmployeeUpdate,
@@ -166,6 +203,12 @@ def add_work_item(
             detail="Employee not found"
         )
 
+    if created_work_item == "invalid_initial_status":
+        raise HTTPException(
+            status_code=400,
+            detail="New work item must have TODO status"
+        )
+
     return created_work_item
 
 @app.get(
@@ -223,6 +266,11 @@ def edit_work_item(
         work_item_id,
         work_item
     )
+    if updated_work_item == "invalid_status_transition":
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid status transition"
+            )
 
     if updated_work_item == "employee_not_found":
         raise HTTPException(
@@ -237,6 +285,36 @@ def edit_work_item(
         )
 
     return updated_work_item
+
+@app.patch(
+    "/work-items/{work_item_id}/status",
+    response_model=WorkItemResponse,
+)
+def edit_work_item_status(
+    status_update: WorkItemStatusUpdate,
+    work_item_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+):
+    updated_work_item = update_work_item_status(
+        db,
+        work_item_id,
+        status_update,
+    )
+
+    if updated_work_item is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Work item not found",
+        )
+
+    if isinstance(updated_work_item, str):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid status transition",
+        )
+
+    return updated_work_item
+
 
 @app.delete(
     "/work-items/{work_item_id}",

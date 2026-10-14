@@ -51,11 +51,12 @@ class EmployeeListResponse(BaseModel):
     offset: int
     items: list[EmployeeResponse]
 
+
 class WorkItemCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
     employee_id: int = Field(gt=0)
-    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"] = "TODO"
+    status: str = "TODO"
     priority: Literal["LOW", "MEDIUM", "HIGH"] = "MEDIUM"
     due_date: date | None = None
 
@@ -66,14 +67,15 @@ class WorkItemCreate(BaseModel):
 
         if not value:
             raise ValueError("Title cannot be blank")
-
+        
         return value
+
 
 class WorkItemUpdate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
     employee_id: int = Field(gt=0)
-    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"]
+    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"] | None = None
     priority: Literal["LOW", "MEDIUM", "HIGH"]
     due_date: date | None = None
 
@@ -84,8 +86,19 @@ class WorkItemUpdate(BaseModel):
 
         if not value:
             raise ValueError("Title cannot be blank")
-
+        
         return value
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def reject_null_status(cls, value):
+        if value is None:
+            raise ValueError("Status cannot be null")
+        return value
+
+
+class WorkItemStatusUpdate(BaseModel):
+    status: Literal["TODO", "IN_PROGRESS", "COMPLETED"]
 
 
 class AssignedEmployeeResponse(BaseModel):
