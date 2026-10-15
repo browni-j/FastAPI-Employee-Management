@@ -720,6 +720,69 @@ Request body:
 `GET /employees/{employee_id}/work-summary`
 
 Returns the employee's total work items and counts for `TODO`, `IN_PROGRESS`, and `COMPLETED`.
+### Example Responses
+
+**PATCH `/work-items/{work_item_id}/status` — Success (200 OK)**
+
+```json
+{
+  "id": 5,
+  "employee_id": 4,
+  "status": "COMPLETED",
+  "priority": "MEDIUM"
+}
+```
+
+**Invalid status transition (400 Bad Request)**
+
+```json
+{
+  "detail": "Invalid status transition"
+}
+```
+
+**Invalid initial status (400 Bad Request)**
+
+```json
+{
+  "detail": "New work item must have TODO status"
+}
+```
+
+**Invalid status value (422 Unprocessable Entity)**
+
+Status values other than `TODO`, `IN_PROGRESS`, or `COMPLETED` are rejected by request validation.
+
+**Employee work summary — `GET /employees/{employee_id}/work-summary` (200 OK)**
+
+```json
+{
+  "employee_id": 4,
+  "employee_name": "Task3 Test",
+  "total_work_items": 6,
+  "todo": 1,
+  "in_progress": 2,
+  "completed": 3,
+  "work_items": []
+}
+```
+
+**Missing work item (404 Not Found)**
+
+```json
+{
+  "detail": "Work item not found"
+}
+```
+
+### Run the Project
+
+```powershell
+git checkout task-5
+.\venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload
+```
+
 
 ### Task 5 Screenshots
 

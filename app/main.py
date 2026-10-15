@@ -36,6 +36,7 @@ from app.services import (
     update_work_item,
     update_work_item_status,
     delete_work_item,
+    get_employee_work_summary,
 )
 
 app = FastAPI()
@@ -108,8 +109,9 @@ def get_employee(
     return employee
 
 
+
 @app.get("/employees/{employee_id}/work-summary")
-def get_employee_work_summary(
+def get_employee_work_summary_endpoint(
     employee_id: int = Path(gt=0),
     db: Session = Depends(get_db),
 ):
@@ -121,26 +123,13 @@ def get_employee_work_summary(
             detail="Employee not found",
         )
 
-    work_items = (
-        db.query(WorkItem)
-        .filter(WorkItem.employee_id == employee_id)
-        .all()
-    )
+    summary = get_employee_work_summary(db, employee_id)
 
     return {
         "employee_id": employee.id,
         "employee_name": employee.name,
-        "total_work_items": len(work_items),
-        "todo": sum(item.status == "TODO" for item in work_items),
-        "in_progress": sum(
-            item.status == "IN_PROGRESS" for item in work_items
-        ),
-        "completed": sum(
-            item.status == "COMPLETED" for item in work_items
-        ),
-        "work_items": work_items,
+        **summary,
     }
-
 
 
 @app.put("/employees/{employee_id}", response_model=EmployeeResponse)
@@ -267,10 +256,10 @@ def edit_work_item(
         work_item
     )
     if updated_work_item == "invalid_status_transition":
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid status transition"
-            )
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid status transition",
+        )
 
     if updated_work_item == "employee_not_found":
         raise HTTPException(
