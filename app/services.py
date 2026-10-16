@@ -124,26 +124,12 @@ def get_employee_work_summary(db: Session, employee_id: int):
     for status, count in status_counts:
         counts[status] = count
 
-    total_work_items = (
-        db.query(func.count(WorkItem.id))
-        .filter(WorkItem.employee_id == employee_id)
-        .scalar()
-    )
-
-    work_items = (
-        db.query(WorkItem)
-        .filter(WorkItem.employee_id == employee_id)
-        .order_by(WorkItem.id.asc())
-        .all()
-    )
-
     return {
-        "total_work_items": total_work_items,
+        "total_work_items": sum(counts.values()),
         "todo": counts["TODO"],
         "in_progress": counts["IN_PROGRESS"],
         "completed": counts["COMPLETED"],
-        "work_items": work_items,
-    }
+     }
 
 
 def validate_status_transition(

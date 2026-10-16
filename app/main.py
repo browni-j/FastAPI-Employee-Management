@@ -127,7 +127,6 @@ def get_employee_work_summary_endpoint(
 
     return {
         "employee_id": employee.id,
-        "employee_name": employee.name,
         **summary,
     }
 

@@ -81,10 +81,10 @@ git clone https://github.com/browni-j/FastAPI-Employee-Management.git
 cd FastAPI-Employee-Management
 ```
 
-### 2. Switch to the Task 4 Branch
+### 2. Switch to the Task 5 Branch
 
 ```bash
-git switch task-4
+git switch task-5
 ```
 
 ### 3. Create a Virtual Environment
@@ -758,12 +758,10 @@ Status values other than `TODO`, `IN_PROGRESS`, or `COMPLETED` are rejected by r
 ```json
 {
   "employee_id": 4,
-  "employee_name": "Task3 Test",
   "total_work_items": 6,
   "todo": 1,
   "in_progress": 2,
-  "completed": 3,
-  "work_items": []
+  "completed": 3
 }
 ```
 
@@ -791,4 +789,3 @@ uvicorn app.main:app --reload
 3. Invalid initial status — `screenshots/Task5_Invalid_Initial_Status.png`
 4. Employee work summary — `screenshots/Task5_Employee_Work_Summary.png`
 5. Missing work item — `screenshots/Task5_Missing_Work_Item.png`
-
