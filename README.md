@@ -81,11 +81,11 @@ git clone https://github.com/browni-j/FastAPI-Employee-Management.git
 cd FastAPI-Employee-Management
 ```
 
-### 2. Switch to the Task 5 Branch
+```markdown
+### 2. Switch to the Task 6 Branch
 
 ```bash
-git switch task-5
-```
+git switch task-6
 
 ### 3. Create a Virtual Environment
 
@@ -160,16 +160,22 @@ To view work item records:
 ```sql
 SELECT * FROM work_items;
 ```
-
 ## Environment Configuration
 
 Create a `.env` file in the project root.
 
 ```env
-DATABASE_URL=mysql+pymysql://root:your_password@localhost:3306/employee_management
+DATABASE_URL=mysql+pymysql://root:your_password@localhost:3306/employee_service_db
+
+WORK_ITEM_DATABASE_URL=mysql+pymysql://root:your_password@localhost:3306/work_item_service_db
 ```
 
-Replace `your_password` with the local MySQL password.
+Replace `your_password` with your local MySQL password.
+
+The application uses two separate MySQL databases:
+
+- `employee_service_db` for Employee Service.
+- `work_item_service_db` for Work Item Service.
 
 A sample configuration is provided in `.env.example`.
 
@@ -789,3 +795,90 @@ uvicorn app.main:app --reload
 3. Invalid initial status — `screenshots/Task5_Invalid_Initial_Status.png`
 4. Employee work summary — `screenshots/Task5_Employee_Work_Summary.png`
 5. Missing work item — `screenshots/Task5_Missing_Work_Item.png`
+
+## Task 6 – Microservices Architecture
+
+Task 6 separates the Employee Management application into two independent FastAPI microservices.
+
+### Microservices
+
+**1. Employee Service**
+- Port: `8001`
+- Database: `employee_service_db`
+- Handles employee-related operations.
+
+Endpoints:
+- `GET /health` – Employee Service health check
+- `POST /employees` – Create an employee
+- `GET /employees` – Retrieve all employees
+- `GET /employees/{employee_id}` – Retrieve an employee by ID
+
+**2. Work Item Service**
+- Port: `8002`
+- Database: `work_item_service_db`
+- Handles work-item-related operations.
+
+Endpoints:
+- `GET /health` – Work Item Service health check
+- `POST /work-items` – Create a work item
+- `GET /work-items` – Retrieve all work items
+- `GET /work-items/{work_item_id}` – Retrieve a work item by ID
+
+### Database Configuration
+
+Each microservice uses a separate MySQL database:
+
+- `employee_service_db`
+- `work_item_service_db`
+
+Database connection details are configured using environment variables in the root `.env` file. The `.env` file must not be committed to Git.
+
+### Inter-Service Communication
+
+The Work Item Service communicates with the Employee Service to validate employee IDs before creating work items.
+
+- Existing employee ID: Work item creation succeeds.
+- Non-existing employee ID: Returns `404 Not Found`.
+- If the Employee Service is unavailable, the Work Item Service cannot complete the employee validation request.
+
+### Running the Microservices
+
+Activate the virtual environment in two separate PowerShell terminals.
+
+**Terminal 1 – Employee Service**
+
+```powershell
+.\venv\Scripts\Activate.ps1
+python -m uvicorn employee_service.app.main:app --reload --port 8001
+```
+
+Swagger UI:
+
+`http://127.0.0.1:8001/docs`
+
+**Terminal 2 – Work Item Service**
+
+```powershell
+.\venv\Scripts\Activate.ps1
+python -m uvicorn work_item_service.app.main:app --reload --port 8002
+```
+
+Swagger UI:
+
+`http://127.0.0.1:8002/docs`
+
+Both services must be running simultaneously for inter-service communication.
+
+### Task 6 Testing
+
+The following scenarios were tested:
+
+- Employee Service health check
+- Work Item Service health check
+- Employee creation and retrieval
+- Work item creation and retrieval
+- Employee ID validation through inter-service communication
+- Non-existing employee ID returns `404 Not Found`
+- Non-existing employee returns `404 Not Found` when retrieved
+- Non-existing work item returns `404 Not Found`
+- Invalid work item ID returns `422 Unprocessable Entity`
